@@ -133,7 +133,16 @@ $(document).ready(function() {
     });
     
     const displayResults = (data) => {
-        $('#responseContent').text(data.response);
+        // Main response with same styling as similar queries
+        const mainResponseHTML = `
+            <div class="main-response-item bg-gray-100 p-3 rounded-lg">
+                <div class="main-response-content">
+                    <strong>Response:</strong> ${data.response}
+                </div>
+            </div>
+        `;
+        
+        $('#responseContent').html(mainResponseHTML);
         
         const responseInfoHTML = `
             <div class="info-item flex flex-wrap gap-x-4 gap-y-2">
