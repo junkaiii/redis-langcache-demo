@@ -1,5 +1,7 @@
 # Redis LangCache Demo
 
+<img width="725" height="844" alt="Screenshot 2025-10-29 at 12 47 15 PM" src="https://github.com/user-attachments/assets/d8868de6-ad3c-49de-9b30-2a66045701fb" />
+
 This project demonstrates the benefits of using Redis as a cache for LLM (Large Language Model) queries and responses. It uses the @redis-ai/langcache package to cache responses from Google's Gemini API.
 
 ## Features
