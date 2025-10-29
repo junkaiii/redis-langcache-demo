@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redis LangCache demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-100">
+        <div class="max-w-2xl mx-auto p-5">
+            <header class="text-center py-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Redis LangCache demo</h1>
+                <p class="text-gray-600 mb-6">Demonstrating the benefits of caching LLM queries and responses</p>
+                <button id="showConfigBtn" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors duration-300">
+                    Reconfigure API Keys
+                </button>
+            </header>
+            
+            <main class="space-y-6">
+                <div id="configSection" class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Configuration</h2>
+                    <p class="text-gray-600 italic mb-6">Please enter your API credentials to get started. These are stored in your browser's local storage and are not sent to any server.</p>
+                    <form id="configForm" class="space-y-4">
+                        <div class="space-y-2">
+                            <label for="geminiApiKey" class="block text-sm font-medium text-gray-700">Gemini API Key:</label>
+                            <input type="password" id="geminiApiKey" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., AIzaSy...">
+                            <small class="block text-xs text-gray-500">Get this from Google AI Studio</small>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="langcacheServerUrl" class="block text-sm font-medium text-gray-700">LangCache Server URL:</label>
+                            <input type="text" id="langcacheServerUrl" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., https://aws-us-east-1.langcache.redis.io">
+                            <small class="block text-xs text-gray-500">Your LangCache server endpoint</small>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="langcacheCacheId" class="block text-sm font-medium text-gray-700">LangCache Cache ID:</label>
+                            <input type="text" id="langcacheCacheId" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 04822712aec9426a8f4b0295b1386553">
+                            <small class="block text-xs text-gray-500">Your unique cache identifier</small>
+                        </div>
+                        
+                        <div class="space-y-2">
+                            <label for="langcacheApiKey" class="block text-sm font-medium text-gray-700">LangCache API Key:</label>
+                            <input type="password" id="langcacheApiKey" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Your LangCache API key">
+                            <small class="block text-xs text-gray-500">Your LangCache authentication key</small>
+                        </div>
+                        
+                        <div class="flex gap-4 mt-6 flex-wrap">
+                            <button type="submit" class="flex-1 min-w-[120px] bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors duration-300">
+                                Save & Continue
+                            </button>
+                            <button type="button" id="cancelConfigBtn" class="flex-1 min-w-[120px] bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg transition-colors duration-300">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div id="querySection" class="bg-white rounded-xl shadow-lg p-6 hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Query the LLM</h2>
+                    <form id="queryForm" class="space-y-4">
+                        <textarea 
+                            id="queryInput" 
+                            class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[120px]"
+                            placeholder="Enter your query for the LLM..." 
+                            rows="4"
+                            required
+                        ></textarea>
+                        <div class="flex gap-4 flex-wrap">
+                            <button type="submit" id="submitBtn" class="flex-1 min-w-[150px] bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition-colors duration-300">
+                                Send Query
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div id="resultsSection" class="bg-white rounded-xl shadow-lg p-6 hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Response</h2>
+                    <div id="responseContainer" class="bg-gray-50 rounded-lg p-6 space-y-4">
+                        <div id="responseContent" class="text-gray-800 whitespace-pre-line"></div>
+                        <div id="responseInfo" class="flex flex-wrap gap-4 pt-4 border-t border-gray-200 text-sm"></div>
+                    </div>
+                </div>
+                
+                <div id="loading" class="bg-white rounded-xl shadow-lg p-6 text-center hidden">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                    <p class="mt-3 text-gray-600">Processing your query...</p>
+                </div>
+                
+                <div id="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg hidden">
+                    <p id="errorMessage"></p>
+                </div>
+            </main>
+
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
